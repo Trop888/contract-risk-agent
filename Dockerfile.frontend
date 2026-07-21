@@ -1,0 +1,18 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+
+COPY requirements-frontend.txt .
+RUN pip install -r requirements-frontend.txt
+
+COPY app.py .
+COPY core ./core
+COPY agents ./agents
+COPY .streamlit ./.streamlit
+
+EXPOSE 8501
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

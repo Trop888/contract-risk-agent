@@ -1,0 +1,33 @@
+FROM python:3.10-slim
+
+RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV HF_ENDPOINT=https://hf-mirror.com \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=8
+
+# 先装 CPU 版 torch：从 PyTorch 官方 CPU 源取（约 190MB，不含 CUDA 库）
+# 其纯 Python 依赖仍从清华源取
+# 先装 CPU 版 torch：从阿里云 PyTorch 镜像取（约 190MB，不含 CUDA 库）
+RUN pip install torch==2.13.0+cpu \
+    -f https://mirrors.aliyun.com/pytorch-wheels/cpu/
+
+# 再装其余依赖（此时 torch 已满足，sentence-transformers 不会再拉 CUDA 版）
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# 预下载 BGE 模型进镜像（运行时离线用）
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-zh-v1.5')"
+
+COPY . .
+
+EXPOSE 8000
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
