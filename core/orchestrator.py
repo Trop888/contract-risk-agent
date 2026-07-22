@@ -15,9 +15,17 @@ class ContractAnalysisOrchestrator:
     def parse_files(self, file_paths: list[str]) -> str:
         """解析一个或多个文件，拼接成一整段合同文本"""
         texts = []
+        errors = []
         for path in file_paths:
             print(f"▶ {self.document_parser_agent.name} 正在解析 {path} ...")
-            texts.append(self.document_parser_agent.run(path))
+            try:
+                texts.append(self.document_parser_agent.run(path))
+            except Exception as e:
+                errors.append(f"{path}: {e}")
+                print(f"⚠ 解析失败，已跳过 {path}：{e}")
+
+        if not texts:
+            raise RuntimeError("所有文件解析失败：\n" + "\n".join(errors))
         return "\n\n".join(texts)
 
     def analyze_text(self, contract_text: str) -> ContractAnalysisResult:
@@ -31,11 +39,19 @@ class ContractAnalysisOrchestrator:
             return self.report_generator_agent.run(result)
 
         print(f"▶ {self.law_matcher_agent.name} 匹配相关法规中...")
-        result = self.law_matcher_agent.run(result)
+        try:
+            result = self.law_matcher_agent.run(result)
+        except Exception as e:
+            result.errors.append(f"法规匹配失败：{e}")
+            print(f"⚠ 法规匹配失败，降级继续：{e}")
 
         print(f"▶ {self.report_generator_agent.name} 生成报告中...")
-        result = self.report_generator_agent.run(result)
-
+        try:
+            result = self.report_generator_agent.run(result)
+        except Exception as e:
+            result.errors.append(f"报告生成失败：{e}")
+            result.overall_conclusion = "报告生成异常，请参考上方风险清单，或稍后重试。"   # 兜底，避免前端空白
+            print(f"⚠ 报告生成失败，降级继续：{e}")
         print("✅ 合同分析完成")
         return result
 

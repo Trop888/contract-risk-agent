@@ -29,3 +29,5 @@ Thumbs.db
 .idea/
 .qoder/
 .workbuddy/
+scripts/law_raw.html
+data/laws/chroma_db/

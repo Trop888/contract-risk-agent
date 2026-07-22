@@ -22,3 +22,4 @@ class ContractAnalysisResult(BaseModel):
     overall_risk:RiskLevel=Field(description="整体风险等级")
     overall_conclusion:str=Field(default="",description="总体结论与签署建议")
     contract_text:Optional[str]=Field(default=None,description="合同原文，供问答追溯使用")
+    errors:list[str]=Field(default_factory=list,description="分析过程中发生的错误信息，用于故障隔离与降级")

@@ -19,6 +19,7 @@ export interface ContractAnalysisResult {
   overall_risk: RiskLevel;
   overall_conclusion: string;
   contract_text?: string | null;
+  errors?: string[];
 }
 
 // 对话消息

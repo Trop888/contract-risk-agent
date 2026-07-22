@@ -25,7 +25,18 @@ export default function ResultView({ result }: { result: ContractAnalysisResult 
 
   return (
     <div className="mt-5 space-y-5">
-      <div className="grid grid-cols-4 gap-3">
+      {result.errors && result.errors.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          ⚠️ 本次分析部分环节降级，报告可能不完整：
+          <ul className="mt-1 list-disc pl-5">
+            {result.errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="grid grid-cols-4 gap-3">        
         {cards.map((c) => (
           <div key={c.label} className="rounded-xl px-3 py-4 text-center text-white" style={{ background: c.color }}>
             <div className="text-2xl font-bold">{c.value}</div>

@@ -100,7 +100,7 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-chat
 ```
 
-> 向量库已包含在仓库中，可直接使用；如需重建：`python scripts/build_vectordb.py`
+> ⚠️ 向量库不随仓库分发，首次使用请先构建：`python scripts/build_vectordb.py`（会读取 `data/laws/cleaned/` 下的法规并写入 ChromaDB）
 
 启动后端：
 
@@ -139,6 +139,7 @@ npm run dev
 - **模型/向量库可插拔**：LLM 服务抽象为接口，更换模型无需改业务代码
 - **RAG 落地**：法规按条切分 + 向量检索，让 AI 的风险判断"有法可依"、减少幻觉
 - **前后端分离**：FastAPI 提供 RESTful 接口，React 独立前端，通过 CORS 通信
+- **故障隔离与分级降级**：多 Agent 流水线中，法规匹配、报告生成等增强环节用异常隔离包裹，单个 Agent 失败不会中断整体分析——核心风险清单照常返回，仅缺失的部分通过 `errors` 字段贯穿到前端明确提示，避免"沉默降级"，兼顾高可用与结果可信度
 
 ---
 
