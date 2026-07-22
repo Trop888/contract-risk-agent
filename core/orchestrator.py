@@ -42,7 +42,7 @@ class ContractAnalysisOrchestrator:
                 is_valid=True,
                 summary="AI 条款审查暂时不可用，以下为规则引擎的确定性检查结果。",
                 overall_risk=RiskLevel.MEDIUM,
-                errors=[f"AI 条款审查失败：{e}"],
+                errors=["AI 智能审查暂时不可用，已自动切换为规则引擎检查，结果可能不完整。"],
             )
         result.contract_text = contract_text
         logger.info("%s 规则预筛中...", self.rule_check_agent.name)
@@ -52,8 +52,8 @@ class ContractAnalysisOrchestrator:
                 result.risk_items = rule_items + result.risk_items 
                 if any(item.level == RiskLevel.HIGH for item in rule_items):
                     result.overall_risk = RiskLevel.HIGH
-        except Exception as e:
-            result.errors.append(f"规则预筛失败：{e}")
+        except Exception:
+            result.errors.append("规则预筛环节异常，已跳过该环节。")
             logger.exception("规则预筛失败，降级继续")
 
         if not result.is_valid:
@@ -63,16 +63,16 @@ class ContractAnalysisOrchestrator:
         logger.info("%s 匹配相关法规中...", self.law_matcher_agent.name)
         try:
             result = self.law_matcher_agent.run(result)
-        except Exception as e:
-            result.errors.append(f"法规匹配失败：{e}")
+        except Exception:
+            result.errors.append("法规匹配服务暂时不可用，部分风险的法律依据可能缺失。")
             logger.exception("法规匹配失败，降级继续")
 
         logger.info("%s 生成报告中...", self.report_generator_agent.name)
         try:
             result = self.report_generator_agent.run(result)
-        except Exception as e:
-            result.errors.append(f"报告生成失败：{e}")
-            result.overall_conclusion = "报告生成异常，请参考上方风险清单，或稍后重试。"  
+        except Exception:
+            result.errors.append("智能总结生成失败，请参考上方风险清单。")
+            result.overall_conclusion = "报告生成异常，请参考上方风险清单，或稍后重试。"
             logger.exception("报告生成失败，降级继续")
 
         logger.info("合同分析完成")
