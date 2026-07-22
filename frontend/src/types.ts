@@ -1,17 +1,15 @@
-// 风险等级：只能是这三个值之一（TypeScript 的联合类型）
 export type RiskLevel = "高" | "中" | "低";
 
-// 单条风险（对应后端的 RiskItem）
 export interface RiskItem {
   risk_type: string;
   level: RiskLevel;
   description: string;
-  clause?: string | null;      // ? 表示可选字段
+  clause?: string | null;    
   suggestion?: string | null;
   legal_basis?: string | null;
+  source?: string;
 }
 
-// 完整分析结果（对应后端的 ContractAnalysisResult）
 export interface ContractAnalysisResult {
   is_valid: boolean;
   summary: string;

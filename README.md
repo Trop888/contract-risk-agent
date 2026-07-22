@@ -6,13 +6,15 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688)
 ![React](https://img.shields.io/badge/React-TypeScript-61dafb)
 ![RAG](https://img.shields.io/badge/RAG-ChromaDB-orange)
+![Tests](https://img.shields.io/badge/tests-pytest-brightgreen)
 
 ---
 
 ## ✨ 功能特性
 
 - 📄 **多格式解析**：支持 PDF / Word / TXT / 图片（OCR），多文件视为同一份合同合并分析
-- 🔍 **风险识别**：基于 LLM 结构化输出，逐条识别风险类型、等级（高/中/低）、依据与修改建议
+- ⚡ **双引擎风险识别**：规则引擎（确定性关键词命中 + 缺失条款检测，秒级、可复现）与大模型（语义分析）互补，风险项标注来源（⚡规则引擎 / 🤖AI审查），兼顾"不漏硬伤"与"深层理解"
+- 🔍 **LLM 结构化输出**：逐条识别风险类型、等级（高/中/低）、法律依据与修改建议
 - ⚖️ **法规匹配（RAG）**：从《民法典》《劳动合同法》向量库中检索相关法条，为每条风险提供法律依据
 - 📊 **结构化报告**：一键生成并下载 Word 审查报告
 - 💬 **智能追问**：针对已分析合同多轮问答，RAG 增强、有理有据
@@ -27,7 +29,9 @@
 ```mermaid
 flowchart LR
     U([用户上传合同]) --> P[📄 文档解析 Agent]
-    P --> R[🔍 条款审查 Agent]
+    P --> K[⚡ 规则预筛 Agent<br/>确定性规则命中]
+    P --> R[🔍 条款审查 Agent<br/>LLM 语义分析]
+    K --> L
     R -->|有效合同| L[⚖️ 法规匹配 Agent<br/>RAG 检索法条]
     R -->|非合同/无效| Rep
     L --> Rep[📊 报告生成 Agent]
@@ -38,7 +42,8 @@ flowchart LR
 | Agent | 职责 |
 |-------|------|
 | **文档解析 Agent** | 统一解析 PDF / Word / TXT / 图片，输出纯文本 |
-| **条款审查 Agent** | 调用 LLM 结构化输出，识别风险条款 |
+| **规则预筛 Agent** | 用确定性规则库命中"无限责任/单方解除"等硬伤 + 检测缺失条款，秒级、可复现 |
+| **条款审查 Agent** | 调用 LLM 结构化输出，识别需语义理解的风险条款 |
 | **法规匹配 Agent** | 用 RAG 检索最相关法条，补充法律依据 |
 | **报告生成 Agent** | 汇总总体结论、生成 Word 报告 |
 | **问答 Agent** | 基于合同 + 检索法条，回答用户追问 |
@@ -54,6 +59,7 @@ flowchart LR
 | **RAG** | ChromaDB（向量数据库） · sentence-transformers（`BAAI/bge-small-zh-v1.5` 中文向量模型） |
 | **文档处理** | PyMuPDF · python-docx · PaddleOCR |
 | **前端** | React · TypeScript · Vite · Tailwind CSS · axios |
+| **测试** | pytest（规则引擎单元测试，覆盖命中/缺失/防误报/可复现） |
 | **知识库** | 《中华人民共和国民法典》《劳动合同法》（按条切分、向量化） |
 
 ---
@@ -62,7 +68,7 @@ flowchart LR
 
 ```
 contract-risk-agent/
-├── agents/                 # 各功能 Agent（解析/审查/法规匹配/报告/问答）
+├── agents/                 # 各功能 Agent（解析/规则预筛/审查/法规匹配/报告/问答）
 ├── core/                   # 编排器 orchestrator + 数据模型 model
 ├── infrastructure/         # 基础设施：LLM 服务、RAG 检索、文档解析
 │   ├── llm/                # 大模型服务（可插拔）
@@ -71,6 +77,7 @@ contract-risk-agent/
 ├── api/                    # FastAPI 接口层（main.py）
 ├── frontend/               # React + TS 前端
 ├── scripts/                # 建库/清洗/爬取脚本
+├── tests/                  # pytest 单元测试（规则引擎）
 ├── data/laws/              # 法规原文、清洗结果、向量库
 └── requirements.txt
 ```
@@ -120,6 +127,14 @@ npm run dev
 
 浏览器打开 http://localhost:5173 即可使用。
 
+### 3. 运行测试
+
+```bash
+python -m pytest tests/ -v
+```
+
+覆盖规则引擎的命中、缺失条款、防误报与结果可复现等场景。
+
 ---
 
 ## 📡 API 接口
@@ -135,11 +150,13 @@ npm run dev
 
 ## 💡 设计亮点
 
-- **多 Agent 职责分离**：解析、审查、法规匹配、报告、问答各司其职，便于扩展与维护
+- **规则 + 大模型双引擎**：确定性规则引擎负责"不漏关键词硬伤"（秒级、可复现），大模型负责"深层语义理解"，二者互补并在结果中标注来源，兼顾召回率与准确率
+- **多 Agent 职责分离**：解析、规则预筛、审查、法规匹配、报告、问答各司其职，便于扩展与维护
 - **模型/向量库可插拔**：LLM 服务抽象为接口，更换模型无需改业务代码
 - **RAG 落地**：法规按条切分 + 向量检索，让 AI 的风险判断"有法可依"、减少幻觉
 - **前后端分离**：FastAPI 提供 RESTful 接口，React 独立前端，通过 CORS 通信
 - **故障隔离与分级降级**：多 Agent 流水线中，法规匹配、报告生成等增强环节用异常隔离包裹，单个 Agent 失败不会中断整体分析——核心风险清单照常返回，仅缺失的部分通过 `errors` 字段贯穿到前端明确提示，避免"沉默降级"，兼顾高可用与结果可信度
+- **单元测试保障**：规则引擎为纯确定性逻辑，用 pytest 覆盖命中/缺失/防误报/可复现，改动规则库时能立即发现回归
 
 ---
 

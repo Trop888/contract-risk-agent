@@ -64,10 +64,20 @@ export default function ResultView({ result }: { result: ContractAnalysisResult 
         <div className="space-y-3">
           {result.risk_items.map((item, i) => (
             <details key={i} className="rounded-xl border border-slate-200 bg-white p-4">
-              <summary className="cursor-pointer font-medium text-slate-800">
-                {LEVEL_EMOJI[item.level]} 风险 {i + 1}：{item.risk_type}（{item.level}风险）
-              </summary>
-              <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <summary className="flex cursor-pointer flex-wrap items-center gap-2 font-medium text-slate-800">
+                <span>{LEVEL_EMOJI[item.level]} 风险 {i + 1}：{item.risk_type}（{item.level}风险）</span>
+                {item.source && (
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs font-normal ${
+                      item.source === "规则引擎"
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "bg-sky-100 text-sky-700"
+                    }`}
+                  >
+                    {item.source === "规则引擎" ? "⚡规则引擎" : "🤖AI审查"}
+                  </span>
+                )}
+              </summary>              <div className="mt-3 space-y-2 text-sm text-slate-600">
                 <p><span className="font-medium text-slate-700">描述：</span>{item.description}</p>
                 {item.clause && <p><span className="font-medium text-slate-700">相关条款：</span>{item.clause}</p>}
                 {item.suggestion && <p><span className="font-medium text-slate-700">💡 修改建议：</span>{item.suggestion}</p>}

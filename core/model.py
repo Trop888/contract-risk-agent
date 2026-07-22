@@ -14,6 +14,7 @@ class RiskItem(BaseModel):
     clause:Optional[str]=Field(default=None,description="相关的合同原文条款")
     suggestion:Optional[str]=Field(default=None,description="修改建议")
     legal_basis:Optional[str]=Field(default=None,description="相关法律依据，如《民法典》第五百八十五条")
+    source:str=Field(default="AI审查",description="风险来源：规则引擎（确定性命中）或 AI审查（语义分析）")
     
 class ContractAnalysisResult(BaseModel):
     is_valid:bool=Field(default=True,description="合同是否有效")
